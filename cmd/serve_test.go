@@ -57,6 +57,82 @@ func TestChooseServeMode(t *testing.T) {
 	}
 }
 
+func TestResolveHTTPPort(t *testing.T) {
+	tests := []struct {
+		name    string
+		portEnv string
+		port    int
+		want    int
+		wantErr bool
+	}{
+		{
+			name: "default",
+			port: defaultHTTPPort,
+			want: defaultHTTPPort,
+		},
+		{
+			name:    "port env",
+			portEnv: "18080",
+			port:    defaultHTTPPort,
+			want:    18080,
+		},
+		{
+			name:    "trim port env",
+			portEnv: " 18080 ",
+			port:    defaultHTTPPort,
+			want:    18080,
+		},
+		{
+			name:    "env wins over flag value",
+			portEnv: "18080",
+			port:    19090,
+			want:    18080,
+		},
+		{
+			name: "flag value",
+			port: 19090,
+			want: 19090,
+		},
+		{
+			name:    "invalid flag value",
+			port:    0,
+			wantErr: true,
+		},
+		{
+			name:    "invalid port env",
+			portEnv: "localhost:8080",
+			port:    defaultHTTPPort,
+			wantErr: true,
+		},
+		{
+			name:    "out of range port env",
+			portEnv: "65536",
+			port:    defaultHTTPPort,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv(portEnvName, tt.portEnv)
+
+			got, err := resolveHTTPPort(tt.port)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatal("resolveHTTPPort() error = nil, want error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("resolveHTTPPort() error = %v", err)
+			}
+			if got != tt.want {
+				t.Fatalf("resolveHTTPPort() = %d, want %d", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestServeStdioListsTools(t *testing.T) {
 	ctx := context.Background()
 	command := exec.Command("go", "run", ".", "serve", "--stdin")

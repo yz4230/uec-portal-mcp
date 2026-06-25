@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
@@ -12,7 +15,7 @@ import (
 )
 
 var serveFlags struct {
-	addr  string
+	port  int
 	stdin bool
 	http  bool
 }
@@ -22,6 +25,9 @@ type serveMode string
 const (
 	serveModeHTTP  serveMode = "http"
 	serveModeStdin serveMode = "stdin"
+
+	defaultHTTPPort = 8080
+	portEnvName     = "PORT"
 )
 
 func newMCPServer() *mcp.Server {
@@ -47,10 +53,35 @@ func chooseServeMode(stdin, http bool) (serveMode, error) {
 	return serveModeHTTP, nil
 }
 
-func runMCPHTTP(ctx context.Context, server *mcp.Server, addr string) error {
+func validateHTTPPort(port int) error {
+	if port < 1 || port > 65535 {
+		return fmt.Errorf("port must be a number between 1 and 65535, got %d", port)
+	}
+	return nil
+}
+
+func resolveHTTPPort(port int) (int, error) {
+	portText := strings.TrimSpace(os.Getenv(portEnvName))
+	if portText == "" {
+		return port, validateHTTPPort(port)
+	}
+
+	envPort, err := strconv.Atoi(portText)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be a port number between 1 and 65535, got %q", portEnvName, portText)
+	}
+
+	if err := validateHTTPPort(envPort); err != nil {
+		return 0, fmt.Errorf("%s must be a port number between 1 and 65535, got %q", portEnvName, portText)
+	}
+
+	return envPort, nil
+}
+
+func runMCPHTTP(ctx context.Context, server *mcp.Server, port int) error {
 	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server { return server }, nil)
 	httpServer := &http.Server{
-		Addr:    addr,
+		Addr:    fmt.Sprintf(":%d", port),
 		Handler: handler,
 	}
 
@@ -61,7 +92,7 @@ func runMCPHTTP(ctx context.Context, server *mcp.Server, addr string) error {
 		}
 	}()
 
-	slog.Info("Starting MCP HTTP server", "addr", addr)
+	slog.Info("Starting MCP HTTP server", "port", port)
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}
@@ -84,7 +115,11 @@ var serveCmd = &cobra.Command{
 			slog.Info("Starting MCP stdio server")
 			return server.Run(cmd.Context(), &mcp.StdioTransport{})
 		case serveModeHTTP:
-			return runMCPHTTP(cmd.Context(), server, serveFlags.addr)
+			port, err := resolveHTTPPort(serveFlags.port)
+			if err != nil {
+				return err
+			}
+			return runMCPHTTP(cmd.Context(), server, port)
 		default:
 			return fmt.Errorf("unknown serve mode %q", mode)
 		}
@@ -96,5 +131,5 @@ func init() {
 
 	serveCmd.Flags().BoolVar(&serveFlags.stdin, "stdin", false, "Serve MCP over stdin/stdout")
 	serveCmd.Flags().BoolVar(&serveFlags.http, "http", false, "Serve MCP over streamable HTTP")
-	serveCmd.Flags().StringVarP(&serveFlags.addr, "addr", "a", ":8080", "Address to listen on in --http mode")
+	serveCmd.Flags().IntVarP(&serveFlags.port, "port", "p", defaultHTTPPort, "Port to listen on in --http mode")
 }
