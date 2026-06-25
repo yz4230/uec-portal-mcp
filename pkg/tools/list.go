@@ -16,12 +16,24 @@ var ListArticlesTool = &mcp.Tool{
 	Name:        "list_articles",
 	Title:       "List Portal Articles",
 	Description: "List UEC Portal bulletin board articles. Supports pagination and keyword search.",
+	Annotations: &mcp.ToolAnnotations{
+		ReadOnlyHint:    true,
+		DestructiveHint: new(false),
+		IdempotentHint:  true,
+		OpenWorldHint:   new(true),
+	},
 }
 
 var GetArticleTool = &mcp.Tool{
 	Name:        "get_article",
 	Title:       "Get Portal Article",
 	Description: "Get a UEC Portal bulletin board article by article_id returned from list_articles.",
+	Annotations: &mcp.ToolAnnotations{
+		ReadOnlyHint:    true,
+		DestructiveHint: new(false),
+		IdempotentHint:  true,
+		OpenWorldHint:   new(true),
+	},
 }
 
 type ListArticlesOutput struct {
