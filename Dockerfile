@@ -27,9 +27,11 @@ WORKDIR /
 
 COPY --from=build /out/uec-portal-mcp /uec-portal-mcp
 
+ENV PORT=8080
+
 EXPOSE 8080
 
 USER nonroot:nonroot
 
 ENTRYPOINT ["/uec-portal-mcp"]
-CMD ["serve", "--http", "--addr", ":8080"]
+CMD ["serve", "--http"]

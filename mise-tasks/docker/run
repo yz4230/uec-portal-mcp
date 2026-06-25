@@ -7,8 +7,9 @@ set -euo pipefail
 DOCKER_COMMAND="${DOCKER_COMMAND:-docker}"
 IMAGE_NAME="${IMAGE_NAME:-uec-portal-mcp}"
 CONTAINER_NAME="${CONTAINER_NAME:-uec-portal-mcp}"
-HOST_PORT="${HOST_PORT:-8080}"
-CONTAINER_PORT="${CONTAINER_PORT:-8080}"
+PORT="${PORT:-${CONTAINER_PORT:-8080}}"
+HOST_PORT="${HOST_PORT:-$PORT}"
+CONTAINER_PORT="${CONTAINER_PORT:-$PORT}"
 
 env_args=()
 if [ -f .env ]; then
@@ -19,5 +20,6 @@ fi
   -p "${HOST_PORT}:${CONTAINER_PORT}" \
   --name "$CONTAINER_NAME" \
   "${env_args[@]}" \
+  -e "PORT=$CONTAINER_PORT" \
   -d \
   "$IMAGE_NAME"

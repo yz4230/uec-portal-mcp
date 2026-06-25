@@ -57,12 +57,19 @@ mise run docker:stop
 mise run docker:rm
 ```
 
-The tasks default to `IMAGE_NAME=uec-portal-mcp`,
-`CONTAINER_NAME=uec-portal-mcp`, `HOST_PORT=8080`, and
-`CONTAINER_PORT=8080`. Override them as needed:
+The server listens on `PORT`, which defaults to `8080`.
+For local runs, the port can also be set with `--port`:
 
 ```bash
-HOST_PORT=18080 CONTAINER_NAME=uec-portal-mcp-dev mise run docker:run
+go run . serve --http --port 18080
+```
+
+The tasks default to `IMAGE_NAME=uec-portal-mcp`,
+`CONTAINER_NAME=uec-portal-mcp`, `HOST_PORT=$PORT`, and
+`CONTAINER_PORT=$PORT`. Override them as needed:
+
+```bash
+PORT=18080 CONTAINER_NAME=uec-portal-mcp-dev mise run docker:run
 ```
 
 ## What This Template Sets Up
