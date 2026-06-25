@@ -79,10 +79,7 @@ func formatListArticlesContent(articles []*portal.Article) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Retrieved %d articles.\n\n", len(articles))
 
-	limit := len(articles)
-	if limit > maxArticleListContentItems {
-		limit = maxArticleListContentItems
-	}
+	limit := min(len(articles), maxArticleListContentItems)
 	for i, article := range articles[:limit] {
 		fmt.Fprintf(&b, "%d. [%s] %s", i+1, article.ArticleID, strings.TrimSpace(article.Title))
 		if !article.PublishStart.IsZero() {
