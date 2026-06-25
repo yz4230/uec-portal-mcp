@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Stop the Docker container"
+
+set -euo pipefail
+
+DOCKER_COMMAND="${DOCKER_COMMAND:-docker}"
+CONTAINER_NAME="${CONTAINER_NAME:-uec-portal-mcp}"
+
+"$DOCKER_COMMAND" stop "$CONTAINER_NAME"

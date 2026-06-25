@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+#MISE description="Build the Docker image"
+
+set -euo pipefail
+
+DOCKER_COMMAND="${DOCKER_COMMAND:-docker}"
+IMAGE_NAME="${IMAGE_NAME:-uec-portal-mcp}"
+export DOCKER_BUILDKIT="${DOCKER_BUILDKIT:-1}"
+
+"$DOCKER_COMMAND" build -t "$IMAGE_NAME" .

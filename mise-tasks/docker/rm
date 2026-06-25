@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Remove the Docker container"
+
+set -euo pipefail
+
+DOCKER_COMMAND="${DOCKER_COMMAND:-docker}"
+CONTAINER_NAME="${CONTAINER_NAME:-uec-portal-mcp}"
+
+"$DOCKER_COMMAND" rm "$CONTAINER_NAME"
