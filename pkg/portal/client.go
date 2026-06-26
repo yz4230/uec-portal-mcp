@@ -187,18 +187,19 @@ func buildListArticlesForm(opts *ListArticlesOptions) (url.Values, error) {
 	formdata.Set("cate", "")
 	formdata.Set("gadget", "0")
 	formdata.Set("history", "1")
-	formdata.Set("keyword", opts.Keyword)
 
-	var year string
-	if opts.Year > 0 {
-		year = strconv.Itoa(opts.Year)
+	keyword, year, page := "", "", "1"
+	if opts != nil {
+		keyword = opts.Keyword
+		if opts.Year > 0 {
+			year = strconv.Itoa(opts.Year)
+		}
+		if opts.Page > 0 {
+			page = strconv.Itoa(opts.Page)
+		}
 	}
+	formdata.Set("keyword", keyword)
 	formdata.Set("year", year)
-
-	var page string
-	if opts.Page > 0 {
-		page = strconv.Itoa(opts.Page)
-	}
 	formdata.Set("page", page)
 
 	formdata.Set("showstudent", "0")
