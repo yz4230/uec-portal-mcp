@@ -184,13 +184,6 @@ func (pc *PortalClient) Login(ctx context.Context) error {
 	return fmt.Errorf("login did not reach portal top page after %d form submissions", maxLoginFormSubmissions)
 }
 
-func must[T any](value T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return value
-}
-
 func buildListArticlesForm(opts *ListArticlesOptions) (url.Values, error) {
 	formdata := url.Values{}
 	formdata.Set("method", "getNoticeList")
