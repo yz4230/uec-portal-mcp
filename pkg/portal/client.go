@@ -184,23 +184,6 @@ func (pc *PortalClient) Login(ctx context.Context) error {
 	return fmt.Errorf("login did not reach portal top page after %d form submissions", maxLoginFormSubmissions)
 }
 
-// curl 'https://portalweb.uec.ac.jp/Portal/u008/getNoticeList.php' \
-// -H 'Accept: */*' \
-// -H 'Accept-Language: en-US,en;q=0.9,ja;q=0.8' \
-// -H 'Connection: keep-alive' \
-// -H 'Content-Type: application/x-www-form-urlencoded;charset=UTF-8' \
-// -b '_ga=GA1.1.489448210.1770793970; _ga_1PE3JQPKLP=GS2.1.s1776149790$o2$g1$t1776149821$j29$l0$h0; _ga_BRCFJR3G3Z=GS2.1.s1780557761$o6$g0$t1780557768$j53$l0$h0; _shibsession_64656661756c7468747470733a2f2f706f7274616c7765622e7565632e61632e6a702f73686962626f6c6574682d7370=_e19c65f4d4f88935c147c5612bbcd10e; PHPSESSID=vp3g99shsmj948ekvebkktvikv' \
-// -H 'Origin: https://portalweb.uec.ac.jp' \
-// -H 'Referer: https://portalweb.uec.ac.jp/Portal/u008/noticeTop.php' \
-// -H 'Sec-Fetch-Dest: empty' \
-// -H 'Sec-Fetch-Mode: cors' \
-// -H 'Sec-Fetch-Site: same-origin' \
-// -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36' \
-// -H 'sec-ch-ua: "Google Chrome";v="149", "Chromium";v="149", "Not)A;Brand";v="24"' \
-// -H 'sec-ch-ua-mobile: ?0' \
-// -H 'sec-ch-ua-platform: "macOS"' \
-// --data-raw 'method=getNoticeList&type=99&cate=&gadget=0&list=1'
-
 func must[T any](value T, err error) T {
 	if err != nil {
 		panic(err)
