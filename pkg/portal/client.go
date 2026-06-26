@@ -218,19 +218,34 @@ func parseArticleList(doc *goquery.Document) ([]*ArticleHeading, error) {
 	for _, table := range doc.Find("table.def_table_info").EachIter() {
 		article := &ArticleHeading{}
 
-		titleEl := table.Find("h3 a").First()
-		titleHref, exists := titleEl.Attr("href")
+		titleEl := table.Find("h3").First()
+		titleAnchorEl := titleEl.Find("a").First()
+		titleHref, exists := titleAnchorEl.Attr("href")
 		if !exists {
 			slog.Warn("article title link not found")
 			continue
 		}
-		matches := noticeLinkPattern.FindStringSubmatch(strings.Join(strings.Fields(titleHref), ""))
+		matches := noticeLinkPattern.FindStringSubmatch(titleHref)
 		if len(matches) < 2 {
 			slog.Warn("article title link does not match expected pattern", "href", titleHref)
 			continue
 		}
 		article.ArticleID = strings.TrimSpace(matches[1])
-		article.Title = strings.TrimSpace(titleEl.Text())
+		article.Title = strings.TrimSpace(titleAnchorEl.Text())
+		titleAnchorEl.Remove()
+
+		article.Read = true
+		if readEl := titleEl.Find("span[id^=VIEW_HISTORY_]"); readEl.Length() > 0 {
+			article.Read = false
+			readEl.Remove()
+		}
+
+		categoryText := strings.TrimSpace(titleEl.Text())
+		if after, found := strings.CutPrefix(categoryText, "("); found {
+			if before, found := strings.CutSuffix(after, ")"); found {
+				article.Category = strings.TrimSpace(before)
+			}
+		}
 
 		authorEl := table.Find("th.th_name").First()
 		article.Author = strings.TrimSpace(authorEl.Text())

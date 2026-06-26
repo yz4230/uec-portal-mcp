@@ -6,6 +6,8 @@ type ArticleHeading struct {
 	ArticleID    string    `json:"article_id"`
 	Author       string    `json:"author"`
 	Title        string    `json:"title"`
+	Read         bool      `json:"read"`
+	Category     string    `json:"category"`
 	PublishStart time.Time `json:"publish_start"`
 	PublishEnd   time.Time `json:"publish_end"`
 }
