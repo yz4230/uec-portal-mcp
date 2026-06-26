@@ -37,8 +37,8 @@ var GetArticleTool = &mcp.Tool{
 }
 
 type ListArticlesOutput struct {
-	Articles []*portal.Article `json:"articles" jsonschema:"Articles returned from the UEC Portal bulletin board"`
-	Count    int               `json:"count" jsonschema:"Number of articles returned"`
+	Articles []*portal.ArticleHeading `json:"articles" jsonschema:"Article headings returned from the UEC Portal bulletin board"`
+	Count    int                      `json:"count" jsonschema:"Number of articles returned"`
 }
 
 type GetArticleInput struct {
@@ -71,7 +71,7 @@ func textResult(text string) *mcp.CallToolResult {
 	}
 }
 
-func formatListArticlesContent(articles []*portal.Article) string {
+func formatListArticlesContent(articles []*portal.ArticleHeading) string {
 	if len(articles) == 0 {
 		return "Retrieved 0 articles."
 	}

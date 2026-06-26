@@ -2,6 +2,14 @@ package portal
 
 import "time"
 
+type ArticleHeading struct {
+	ArticleID    string    `json:"article_id"`
+	Author       string    `json:"author"`
+	Title        string    `json:"title"`
+	PublishStart time.Time `json:"publish_start"`
+	PublishEnd   time.Time `json:"publish_end"`
+}
+
 type Article struct {
 	ArticleID    string    `json:"article_id"`
 	Author       string    `json:"author"`

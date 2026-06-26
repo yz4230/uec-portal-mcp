@@ -15,7 +15,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/pquerna/otp/totp"
 	"github.com/yz4230/uec-portal-mcp/pkg/httpx"
-	"golang.org/x/net/html"
 )
 
 const (
@@ -30,10 +29,7 @@ const (
 	portalDateLayout      = "2006.01.02 15:04:05"
 )
 
-var (
-	noticeLinkPattern     = regexp.MustCompile(`^javascript:openWin\(\s*(\d+)\s*,.*?\);$`)
-	detailMetadataPattern = regexp.MustCompile(`(?s)開始日:\s*([0-9. :]+).*?終了日:\s*([0-9. :]+)\s*(.*?)\s*通知対象`)
-)
+var noticeLinkPattern = regexp.MustCompile(`^javascript:openWin\(\s*(\d+)\s*,.*?\);$`)
 
 type PortalClient struct {
 	c    *http.Client
@@ -235,22 +231,10 @@ func buildListArticlesForm(opts *ListArticlesOptions) (url.Values, error) {
 	return formdata, nil
 }
 
-func textWithLineBreaks(sel *goquery.Selection) string {
-	clone := sel.Clone()
-	clone.Find("br").Each(func(_ int, br *goquery.Selection) {
-		br.ReplaceWithNodes(&html.Node{Type: html.TextNode, Data: "\n"})
-	})
-	return strings.TrimSpace(clone.Text())
-}
-
-func parsePortalDate(text string) (time.Time, error) {
-	return time.Parse(portalDateLayout, strings.TrimSpace(text))
-}
-
-func parseArticleList(doc *goquery.Document) ([]*Article, error) {
-	articles := make([]*Article, 0)
+func parseArticleList(doc *goquery.Document) ([]*ArticleHeading, error) {
+	articles := make([]*ArticleHeading, 0)
 	for _, table := range doc.Find("table.def_table_info").EachIter() {
-		article := &Article{}
+		article := &ArticleHeading{}
 
 		titleEl := table.Find("h3 a").First()
 		titleHref, exists := titleEl.Attr("href")
@@ -273,7 +257,7 @@ func parseArticleList(doc *goquery.Document) ([]*Article, error) {
 		publishStartEl := publishDateEl.First()
 		publishStartEl.Find("strong").Remove()
 		publishStartText := strings.TrimSpace(publishStartEl.Text())
-		publishStart, err := parsePortalDate(publishStartText)
+		publishStart, err := time.Parse(portalDateLayout, publishStartText)
 		if err != nil {
 			slog.Warn("failed to parse publish start date", "text", publishStartText, "error", err)
 			continue
@@ -283,15 +267,12 @@ func parseArticleList(doc *goquery.Document) ([]*Article, error) {
 		publishEndEl := publishDateEl.Last()
 		publishEndEl.Find("strong").Remove()
 		publishEndText := strings.TrimSpace(publishEndEl.Text())
-		publishEnd, err := parsePortalDate(publishEndText)
+		publishEnd, err := time.Parse(portalDateLayout, publishEndText)
 		if err != nil {
 			slog.Warn("failed to parse publish end date", "text", publishEndText, "error", err)
 			continue
 		}
 		article.PublishEnd = publishEnd
-
-		contentEl := table.Find("p.def_p").First()
-		article.Content = textWithLineBreaks(contentEl)
 
 		articles = append(articles, article)
 	}
@@ -299,46 +280,61 @@ func parseArticleList(doc *goquery.Document) ([]*Article, error) {
 	return articles, nil
 }
 
+func parsePortalDate(prefix, f1, f2 string) (time.Time, error) {
+	dateStr := fmt.Sprintf("%s %s", f1, f2)
+	dateStr, found := strings.CutPrefix(dateStr, prefix)
+	if !found {
+		return time.Time{}, fmt.Errorf("failed to parse date from string: %s", dateStr)
+	}
+	return time.Parse(portalDateLayout, dateStr)
+}
+
 func parseArticleDetail(doc *goquery.Document, articleID string) (*Article, error) {
-	titleEl := doc.Find("#src1_subject").First()
+	article := &Article{ArticleID: articleID}
+
+	titleEl := doc.Find("#SCHEDULER_SUBJECT").First()
 	if titleEl.Length() == 0 {
 		return nil, fmt.Errorf("article detail title not found")
 	}
-
-	article := &Article{
-		ArticleID: strings.TrimSpace(articleID),
-		Title:     strings.TrimSpace(titleEl.Clone().Children().Remove().End().Text()),
-	}
-	if article.Title == "" {
-		article.Title = strings.TrimSpace(titleEl.Text())
+	if title, exists := titleEl.Attr("value"); exists {
+		article.Title = strings.TrimSpace(title)
 	}
 
-	metadataText := strings.Join(strings.Fields(doc.Find("span.def_date").First().Text()), " ")
-	matches := detailMetadataPattern.FindStringSubmatch(metadataText)
-	if len(matches) >= 4 {
-		publishStart, err := parsePortalDate(matches[1])
-		if err != nil {
-			return nil, fmt.Errorf("parse publish start date %q: %w", matches[1], err)
-		}
-		publishEnd, err := parsePortalDate(matches[2])
-		if err != nil {
-			return nil, fmt.Errorf("parse publish end date %q: %w", matches[2], err)
-		}
-		article.PublishStart = publishStart
-		article.PublishEnd = publishEnd
-		article.Author = strings.TrimSpace(matches[3])
-	}
-
-	bodyEl := doc.Find("#src1_body").First()
+	bodyEl := doc.Find("#SCHEDULER_BODY").First()
 	if bodyEl.Length() == 0 {
 		return nil, fmt.Errorf("article detail body not found")
 	}
-	article.Content = textWithLineBreaks(bodyEl)
+	if content, exists := bodyEl.Attr("value"); exists {
+		article.Content = strings.TrimSpace(content)
+	}
+
+	metaEl := doc.Find("span.def_date").First()
+	if metaEl.Length() == 0 {
+		return nil, fmt.Errorf("article detail metadata not found")
+	}
+	fields := strings.Fields(metaEl.Text())
+	if len(fields) < 5 {
+		return nil, fmt.Errorf("unexpected metadata format: %s", metaEl.Text())
+	}
+
+	startDate, err := parsePortalDate("開始日:", fields[0], fields[1])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse start date from metadata: %v", err)
+	}
+	article.PublishStart = startDate
+
+	endDate, err := parsePortalDate("終了日:", fields[2], fields[3])
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse end date from metadata: %v", err)
+	}
+	article.PublishEnd = endDate
+
+	article.Author = fields[4]
 
 	return article, nil
 }
 
-func (pc *PortalClient) ListArticles(ctx context.Context, opts *ListArticlesOptions) ([]*Article, error) {
+func (pc *PortalClient) ListArticles(ctx context.Context, opts *ListArticlesOptions) ([]*ArticleHeading, error) {
 	formdata, err := buildListArticlesForm(opts)
 	if err != nil {
 		return nil, err
