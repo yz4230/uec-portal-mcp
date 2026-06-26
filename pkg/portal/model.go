@@ -20,11 +20,9 @@ type Article struct {
 }
 
 type ListArticlesOptions struct {
-	Page     int    `json:"page,omitempty"`
-	Keyword  string `json:"keyword,omitempty"`
-	Year     int    `json:"year,omitempty"`
-	Category string `json:"category,omitempty"`
-	Type     string `json:"type,omitempty"`
+	Page    int    `json:"page,omitempty"`
+	Keyword string `json:"keyword,omitempty"`
+	Year    int    `json:"year,omitempty"`
 }
 
 type GetArticleOptions struct {

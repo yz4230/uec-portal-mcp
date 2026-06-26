@@ -186,41 +186,21 @@ func buildListArticlesForm(opts *ListArticlesOptions) (url.Values, error) {
 	formdata.Set("type", "99")
 	formdata.Set("cate", "")
 	formdata.Set("gadget", "0")
-	formdata.Set("list", "1")
-	if opts == nil {
-		return formdata, nil
-	}
-	if opts.Page < 0 {
-		return nil, fmt.Errorf("page must be greater than or equal to zero")
-	}
-	if opts.Year < 0 {
-		return nil, fmt.Errorf("year must be greater than or equal to zero")
-	}
-	if opts.Type != "" {
-		formdata.Set("type", opts.Type)
-	}
-	if opts.Category != "" {
-		formdata.Set("cate", opts.Category)
-	}
-
-	useSearchList := opts.Page > 0 || opts.Keyword != "" || opts.Year > 0
-	if !useSearchList {
-		return formdata, nil
-	}
-
-	page := opts.Page
-	if page == 0 {
-		page = 1
-	}
-	year := opts.Year
-	if year == 0 {
-		year = time.Now().Year()
-	}
-
 	formdata.Set("history", "1")
 	formdata.Set("keyword", opts.Keyword)
-	formdata.Set("year", strconv.Itoa(year))
-	formdata.Set("page", strconv.Itoa(page))
+
+	var year string
+	if opts.Year > 0 {
+		year = strconv.Itoa(opts.Year)
+	}
+	formdata.Set("year", year)
+
+	var page string
+	if opts.Page > 0 {
+		page = strconv.Itoa(opts.Page)
+	}
+	formdata.Set("page", page)
+
 	formdata.Set("showstudent", "0")
 	formdata.Set("pld_sect1_val", "")
 	formdata.Set("pld_sect2_val", "")
@@ -228,6 +208,7 @@ func buildListArticlesForm(opts *ListArticlesOptions) (url.Values, error) {
 	formdata.Set("pld_sect4_val", "")
 	formdata.Set("pld_year_val1", "")
 	formdata.Set("list", "2")
+
 	return formdata, nil
 }
 
