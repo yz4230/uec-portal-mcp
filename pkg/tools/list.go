@@ -15,7 +15,7 @@ const maxArticleListContentItems = 20
 var ListArticlesTool = &mcp.Tool{
 	Name:        "list_articles",
 	Title:       "List Portal Articles",
-	Description: "List UEC Portal bulletin board articles. Supports pagination and keyword search.",
+	Description: "Fetch UEC Student Portal bulletin board article headings. Use page for pagination, keyword for search text, and year to filter by publication year.",
 	Annotations: &mcp.ToolAnnotations{
 		ReadOnlyHint:    true,
 		DestructiveHint: new(false),
@@ -27,7 +27,7 @@ var ListArticlesTool = &mcp.Tool{
 var GetArticleTool = &mcp.Tool{
 	Name:        "get_article",
 	Title:       "Get Portal Article",
-	Description: "Get a UEC Portal bulletin board article by article_id returned from list_articles.",
+	Description: "Fetch the full body and metadata for a UEC Student Portal bulletin board article. Pass an article_id returned by list_articles; set history=true for search/history results.",
 	Annotations: &mcp.ToolAnnotations{
 		ReadOnlyHint:    true,
 		DestructiveHint: new(false),
@@ -37,17 +37,17 @@ var GetArticleTool = &mcp.Tool{
 }
 
 type ListArticlesOutput struct {
-	Articles []*portal.ArticleHeading `json:"articles" jsonschema:"Article headings returned from the UEC Portal bulletin board"`
-	Count    int                      `json:"count" jsonschema:"Number of articles returned"`
+	Articles []*portal.ArticleHeading `json:"articles" jsonschema:"Article headings with article_id, title, author, category, read state, and publication dates"`
+	Count    int                      `json:"count" jsonschema:"Number of article headings returned"`
 }
 
 type GetArticleInput struct {
 	ArticleID string `json:"article_id" jsonschema:"Article ID returned by list_articles"`
-	History   bool   `json:"history,omitempty" jsonschema:"Set true when retrieving an article from history/search results"`
+	History   bool   `json:"history,omitempty" jsonschema:"Set true when retrieving an article ID from search/history results"`
 }
 
 type GetArticleOutput struct {
-	Article *portal.Article `json:"article" jsonschema:"Article detail"`
+	Article *portal.Article `json:"article" jsonschema:"Full article detail including title, body, author, and publication dates"`
 }
 
 var loggedInPortalClient = sync.OnceValues(func() (*portal.PortalClient, error) {

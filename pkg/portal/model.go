@@ -22,9 +22,9 @@ type Article struct {
 }
 
 type ListArticlesOptions struct {
-	Page    int    `json:"page,omitempty"`
-	Keyword string `json:"keyword,omitempty"`
-	Year    int    `json:"year,omitempty"`
+	Page    int    `json:"page,omitempty" jsonschema:"1-based article list page number; defaults to 1"`
+	Keyword string `json:"keyword,omitempty" jsonschema:"Search text for matching portal bulletin board articles"`
+	Year    int    `json:"year,omitempty" jsonschema:"Publication year to filter by, such as 2026"`
 }
 
 type GetArticleOptions struct {
