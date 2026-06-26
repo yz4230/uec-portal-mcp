@@ -81,12 +81,12 @@ func formatListArticlesContent(articles []*portal.ArticleHeading) string {
 
 	limit := min(len(articles), maxArticleListContentItems)
 	for i, article := range articles[:limit] {
-		fmt.Fprintf(&b, "%d. [%s] %s", i+1, article.ArticleID, strings.TrimSpace(article.Title))
+		fmt.Fprintf(&b, "%d. [%s] %s", i+1, article.ArticleID, article.Title)
 		if !article.PublishStart.IsZero() {
 			fmt.Fprintf(&b, " (%s)", article.PublishStart.Format("2006-01-02 15:04"))
 		}
-		if strings.TrimSpace(article.Author) != "" {
-			fmt.Fprintf(&b, " - %s", strings.TrimSpace(article.Author))
+		if article.Author != "" {
+			fmt.Fprintf(&b, " - %s", article.Author)
 		}
 		b.WriteByte('\n')
 	}
@@ -94,15 +94,15 @@ func formatListArticlesContent(articles []*portal.ArticleHeading) string {
 		fmt.Fprintf(&b, "\nShowing the first %d articles. StructuredContent contains the full result.", limit)
 	}
 
-	return strings.TrimSpace(b.String())
+	return b.String()
 }
 
 func formatGetArticleContent(article *portal.Article) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "# %s\n\n", strings.TrimSpace(article.Title))
+	fmt.Fprintf(&b, "# %s\n\n", article.Title)
 	fmt.Fprintf(&b, "article_id: %s\n", article.ArticleID)
-	if strings.TrimSpace(article.Author) != "" {
-		fmt.Fprintf(&b, "author: %s\n", strings.TrimSpace(article.Author))
+	if article.Author != "" {
+		fmt.Fprintf(&b, "author: %s\n", article.Author)
 	}
 	if !article.PublishStart.IsZero() {
 		fmt.Fprintf(&b, "publish_start: %s\n", article.PublishStart.Format("2006-01-02 15:04:05"))
@@ -110,10 +110,10 @@ func formatGetArticleContent(article *portal.Article) string {
 	if !article.PublishEnd.IsZero() {
 		fmt.Fprintf(&b, "publish_end: %s\n", article.PublishEnd.Format("2006-01-02 15:04:05"))
 	}
-	if strings.TrimSpace(article.Content) != "" {
-		fmt.Fprintf(&b, "\n%s", strings.TrimSpace(article.Content))
+	if article.Content != "" {
+		fmt.Fprintf(&b, "\n%s", article.Content)
 	}
-	return strings.TrimSpace(b.String())
+	return b.String()
 }
 
 func ListArticles(ctx context.Context, request *mcp.CallToolRequest, input *portal.ListArticlesOptions) (*mcp.CallToolResult, *ListArticlesOutput, error) {

@@ -243,7 +243,7 @@ func parseArticleList(doc *goquery.Document) ([]*ArticleHeading, error) {
 		categoryText := strings.TrimSpace(titleEl.Text())
 		if after, found := strings.CutPrefix(categoryText, "("); found {
 			if before, found := strings.CutSuffix(after, ")"); found {
-				article.Category = strings.TrimSpace(before)
+				article.Category = before
 			}
 		}
 
@@ -344,11 +344,6 @@ func (pc *PortalClient) ListArticles(ctx context.Context, opts *ListArticlesOpti
 }
 
 func (pc *PortalClient) GetArticle(ctx context.Context, articleID string, opts *GetArticleOptions) (*Article, error) {
-	articleID = strings.TrimSpace(articleID)
-	if articleID == "" {
-		return nil, fmt.Errorf("article ID is required")
-	}
-
 	formdata := url.Values{}
 	formdata.Set("method", "getNoticeDetail")
 	formdata.Set("notice_idx", articleID)

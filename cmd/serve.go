@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
@@ -61,7 +60,7 @@ func validateHTTPPort(port int) error {
 }
 
 func resolveHTTPPort(port int) (int, error) {
-	portText := strings.TrimSpace(os.Getenv(portEnvName))
+	portText := os.Getenv(portEnvName)
 	if portText == "" {
 		return port, validateHTTPPort(port)
 	}
