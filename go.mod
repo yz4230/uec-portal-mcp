@@ -3,6 +3,7 @@ module github.com/yz4230/uec-portal-mcp
 go 1.26
 
 require (
+	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/lmittmann/tint v1.1.3
 	github.com/modelcontextprotocol/go-sdk v1.6.1
 	github.com/pquerna/otp v1.5.0
@@ -10,7 +11,6 @@ require (
 )
 
 require (
-	github.com/PuerkitoBio/goquery v1.12.0 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/google/jsonschema-go v0.4.3 // indirect
