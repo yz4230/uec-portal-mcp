@@ -19,6 +19,7 @@ fi
 "$DOCKER_COMMAND" run \
   -p "${HOST_PORT}:${CONTAINER_PORT}" \
   --name "$CONTAINER_NAME" \
+  --restart unless-stopped \
   "${env_args[@]}" \
   -e "PORT=$CONTAINER_PORT" \
   -d \
