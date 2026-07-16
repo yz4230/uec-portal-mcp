@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/yz4230/uec-portal-mcp/pkg/portal"
 )
 
 const maxArticleListContentItems = 20
+
+const portalClientTTL = 30 * time.Minute
 
 var ListArticlesTool = &mcp.Tool{
 	Name:        "list_articles",
@@ -50,18 +53,51 @@ type GetArticleOutput struct {
 	Article *portal.Article `json:"article" jsonschema:"Full article detail including title, body, author, and publication dates"`
 }
 
-var loggedInPortalClient = sync.OnceValues(func() (*portal.PortalClient, error) {
+type portalClientCache struct {
+	mu        sync.Mutex
+	ttl       time.Duration
+	now       func() time.Time
+	load      func(context.Context) (*portal.PortalClient, error)
+	client    *portal.PortalClient
+	expiresAt time.Time
+}
+
+func (c *portalClientCache) get(ctx context.Context) (*portal.PortalClient, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.client != nil && c.now().Before(c.expiresAt) {
+		return c.client, nil
+	}
+
+	client, err := c.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	c.client = client
+	c.expiresAt = c.now().Add(c.ttl)
+	return client, nil
+}
+
+func loadLoggedInPortalClient(ctx context.Context) (*portal.PortalClient, error) {
 	auth, err := portal.LoadAuthConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	pc := portal.NewPortalClient(auth)
-	if err := pc.Login(context.Background()); err != nil {
+	if err := pc.Login(ctx); err != nil {
 		return nil, err
 	}
 	return pc, nil
-})
+}
+
+var loggedInPortalClient = &portalClientCache{
+	ttl:  portalClientTTL,
+	now:  time.Now,
+	load: loadLoggedInPortalClient,
+}
 
 func textResult(text string) *mcp.CallToolResult {
 	return &mcp.CallToolResult{
@@ -117,7 +153,7 @@ func formatGetArticleContent(article *portal.Article) string {
 }
 
 func ListArticles(ctx context.Context, request *mcp.CallToolRequest, input *portal.ListArticlesOptions) (*mcp.CallToolResult, *ListArticlesOutput, error) {
-	pc, err := loggedInPortalClient()
+	pc, err := loggedInPortalClient.get(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -138,7 +174,7 @@ func GetArticle(ctx context.Context, request *mcp.CallToolRequest, input *GetArt
 		input = &GetArticleInput{}
 	}
 
-	pc, err := loggedInPortalClient()
+	pc, err := loggedInPortalClient.get(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
