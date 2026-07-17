@@ -9,21 +9,33 @@ import (
 	"testing"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/yz4230/uec-portal-mcp/pkg/portal"
 	"github.com/yz4230/uec-portal-mcp/pkg/tools"
+	"github.com/yz4230/uec-portal-mcp/pkg/uecauth"
 )
 
 func TestMCPServer_ListAndGetArticlesTools(t *testing.T) {
+	credentials, err := uecauth.LoadCredentialsFromEnv()
+	if err != nil {
+		t.Fatalf("load credentials: %v", err)
+	}
+	authenticator, err := uecauth.New(credentials)
+	if err != nil {
+		t.Fatalf("create authenticator: %v", err)
+	}
+	toolHandler := tools.NewHandler(portal.NewPortalClient(authenticator.NewSession()))
+
 	server := mcp.NewServer(&mcp.Implementation{
 		Name:    "uec-portal-mcp-server-test",
 		Version: "0.1.0",
 	}, nil)
-	mcp.AddTool(server, tools.ListArticlesTool, tools.ListArticles)
-	mcp.AddTool(server, tools.GetArticleTool, tools.GetArticle)
+	mcp.AddTool(server, tools.ListArticlesTool, toolHandler.ListArticles)
+	mcp.AddTool(server, tools.GetArticleTool, toolHandler.GetArticle)
 
-	handler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
+	httpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return server
 	}, nil)
-	httpServer := httptest.NewServer(handler)
+	httpServer := httptest.NewServer(httpHandler)
 	t.Cleanup(httpServer.Close)
 
 	ctx := context.Background()

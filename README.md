@@ -9,7 +9,7 @@ UEC 学生ポータルの掲示板記事を取得する MCP サーバーです�
 - 記事 ID による本文・メタデータ取得
 - MCP stdio transport
 - MCP Streamable HTTP transport
-- ログイン済みポータルクライアントの 30 分キャッシュ
+- 認証セッションライブラリによる 30 分ごとの自動再認証
 - Docker と mise による実行
 
 ## MCP tools
@@ -44,6 +44,23 @@ export PORTAL_OTP_SECRET="your-totp-secret"
 ```
 
 `.env` ファイルを置いた場合は、Docker の mise タスクから自動的に読み込まれます。認証情報はリポジトリにコミットしないでください。
+
+認証処理は `pkg/uecauth` パッケージとして分離されています。返される `Session` は `http.Client` と同様に `Do` を実装し、認証成功から 30 分が経過した後の最初のリクエストで、新しい Cookie Jar を使って自動的に再認証します。ポータル側の画面遷移状態を保つため、各HTTPリクエストは直列化され、直前のレスポンスヘッダーを受信するまで次のリクエストを送信しません。
+
+```go
+credentials := &uecauth.Credentials{
+    Username:  username,
+    Password:  password,
+    OTPSecret: otpSecret,
+}
+authenticator, err := uecauth.New(credentials)
+if err != nil {
+    return err
+}
+session := authenticator.NewSession()
+
+portalClient := portal.NewPortalClient(session)
+```
 
 ## Requirements
 
@@ -109,7 +126,8 @@ Dockerfile は非 root の distroless イメージを使用し、HTTP モード�
 ```text
 .
 ├── cmd/                 # Cobra CLI と MCP の起動モード
-├── pkg/portal/          # ポータル認証、記事取得、HTML パース
+├── pkg/uecauth/         # UEC認証と自動セッション更新
+├── pkg/portal/          # 記事取得とHTMLパース
 ├── pkg/tools/           # MCP tool 定義とハンドラー
 ├── mise-tasks/docker/   # Docker 用 mise タスク
 ├── Dockerfile
@@ -122,6 +140,12 @@ Dockerfile は非 root の distroless イメージを使用し、HTTP モード�
 
 ```bash
 go test ./...
+```
+
+実際のMCPサーバープロセスをstdio・HTTPの両方で起動し、UECポータルへのログインから記事取得まで確認するE2Eテストは、認証用環境変数を設定して次のように実行します。
+
+```bash
+go test -tags=e2e -run '^TestE2E' -v .
 ```
 
 ビルドします。

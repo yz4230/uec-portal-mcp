@@ -10,7 +10,9 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/spf13/cobra"
+	"github.com/yz4230/uec-portal-mcp/pkg/portal"
 	"github.com/yz4230/uec-portal-mcp/pkg/tools"
+	"github.com/yz4230/uec-portal-mcp/pkg/uecauth"
 )
 
 var serveFlags struct {
@@ -29,15 +31,15 @@ const (
 	portEnvName     = "PORT"
 )
 
-func newMCPServer() *mcp.Server {
+func newMCPServer(handler *tools.Handler) *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{
 		Title:   "UEC Portal MCP Server",
 		Name:    "uec-portal-mcp-server",
 		Version: "0.1.0",
 	}, nil)
 
-	mcp.AddTool(server, tools.ListArticlesTool, tools.ListArticles)
-	mcp.AddTool(server, tools.GetArticleTool, tools.GetArticle)
+	mcp.AddTool(server, tools.ListArticlesTool, handler.ListArticles)
+	mcp.AddTool(server, tools.GetArticleTool, handler.GetArticle)
 
 	return server
 }
@@ -108,7 +110,17 @@ var serveCmd = &cobra.Command{
 			return err
 		}
 
-		server := newMCPServer()
+		credentials, err := uecauth.LoadCredentialsFromEnv()
+		if err != nil {
+			return err
+		}
+		authenticator, err := uecauth.New(credentials)
+		if err != nil {
+			return err
+		}
+		session := authenticator.NewSession()
+		handler := tools.NewHandler(portal.NewPortalClient(session))
+		server := newMCPServer(handler)
 		switch mode {
 		case serveModeStdin:
 			slog.Info("Starting MCP stdio server")

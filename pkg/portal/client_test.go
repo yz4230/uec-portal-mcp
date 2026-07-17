@@ -5,30 +5,38 @@ import (
 	"testing"
 
 	"github.com/yz4230/uec-portal-mcp/pkg/portal"
+	"github.com/yz4230/uec-portal-mcp/pkg/uecauth"
 )
 
 func TestPortalClient_Login(t *testing.T) {
-	auth, err := portal.LoadAuthConfig()
+	credentials, err := uecauth.LoadCredentialsFromEnv()
 	if err != nil {
 		t.Fatalf("Failed to load auth config: %v", err)
 	}
-	pc := portal.NewPortalClient(auth)
-	gotErr := pc.Login(context.Background())
-	if gotErr != nil {
-		t.Fatalf("Login failed: %v", gotErr)
+	authenticator, err := uecauth.New(credentials)
+	if err != nil {
+		t.Fatalf("Create authenticator: %v", err)
+	}
+	if _, err := authenticator.Authenticate(context.Background()); err != nil {
+		t.Fatalf("Login failed: %v", err)
 	}
 }
 
 func TestPortalClient_ListAndGetArticles(t *testing.T) {
-	auth, err := portal.LoadAuthConfig()
+	credentials, err := uecauth.LoadCredentialsFromEnv()
 	if err != nil {
 		t.Fatalf("Failed to load auth config: %v", err)
 	}
-	pc := portal.NewPortalClient(auth)
 	ctx := context.Background()
-	if err := pc.Login(ctx); err != nil {
+	authenticator, err := uecauth.New(credentials)
+	if err != nil {
+		t.Fatalf("Create authenticator: %v", err)
+	}
+	session, err := authenticator.Authenticate(ctx)
+	if err != nil {
 		t.Fatalf("Login failed: %v", err)
 	}
+	pc := portal.NewPortalClient(session)
 
 	articles, err := pc.ListArticles(ctx, nil)
 	if err != nil {

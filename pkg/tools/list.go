@@ -4,16 +4,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/yz4230/uec-portal-mcp/pkg/portal"
 )
 
 const maxArticleListContentItems = 20
-
-const portalClientTTL = 30 * time.Minute
 
 var ListArticlesTool = &mcp.Tool{
 	Name:        "list_articles",
@@ -53,50 +49,12 @@ type GetArticleOutput struct {
 	Article *portal.Article `json:"article" jsonschema:"Full article detail including title, body, author, and publication dates"`
 }
 
-type portalClientCache struct {
-	mu        sync.Mutex
-	ttl       time.Duration
-	now       func() time.Time
-	load      func(context.Context) (*portal.PortalClient, error)
-	client    *portal.PortalClient
-	expiresAt time.Time
+type Handler struct {
+	portalClient *portal.PortalClient
 }
 
-func (c *portalClientCache) get(ctx context.Context) (*portal.PortalClient, error) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.client != nil && c.now().Before(c.expiresAt) {
-		return c.client, nil
-	}
-
-	client, err := c.load(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	c.client = client
-	c.expiresAt = c.now().Add(c.ttl)
-	return client, nil
-}
-
-func loadLoggedInPortalClient(ctx context.Context) (*portal.PortalClient, error) {
-	auth, err := portal.LoadAuthConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	pc := portal.NewPortalClient(auth)
-	if err := pc.Login(ctx); err != nil {
-		return nil, err
-	}
-	return pc, nil
-}
-
-var loggedInPortalClient = &portalClientCache{
-	ttl:  portalClientTTL,
-	now:  time.Now,
-	load: loadLoggedInPortalClient,
+func NewHandler(portalClient *portal.PortalClient) *Handler {
+	return &Handler{portalClient: portalClient}
 }
 
 func textResult(text string) *mcp.CallToolResult {
@@ -152,13 +110,8 @@ func formatGetArticleContent(article *portal.Article) string {
 	return b.String()
 }
 
-func ListArticles(ctx context.Context, request *mcp.CallToolRequest, input *portal.ListArticlesOptions) (*mcp.CallToolResult, *ListArticlesOutput, error) {
-	pc, err := loggedInPortalClient.get(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	articles, err := pc.ListArticles(ctx, input)
+func (h *Handler) ListArticles(ctx context.Context, request *mcp.CallToolRequest, input *portal.ListArticlesOptions) (*mcp.CallToolResult, *ListArticlesOutput, error) {
+	articles, err := h.portalClient.ListArticles(ctx, input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -169,17 +122,12 @@ func ListArticles(ctx context.Context, request *mcp.CallToolRequest, input *port
 	}, nil
 }
 
-func GetArticle(ctx context.Context, request *mcp.CallToolRequest, input *GetArticleInput) (*mcp.CallToolResult, *GetArticleOutput, error) {
+func (h *Handler) GetArticle(ctx context.Context, request *mcp.CallToolRequest, input *GetArticleInput) (*mcp.CallToolResult, *GetArticleOutput, error) {
 	if input == nil {
 		input = &GetArticleInput{}
 	}
 
-	pc, err := loggedInPortalClient.get(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	article, err := pc.GetArticle(ctx, input.ArticleID, &portal.GetArticleOptions{History: input.History})
+	article, err := h.portalClient.GetArticle(ctx, input.ArticleID, &portal.GetArticleOptions{History: input.History})
 	if err != nil {
 		return nil, nil, err
 	}
