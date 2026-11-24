@@ -92,6 +92,19 @@ go run . serve --http --port 18080
 go run . --verbose serve --stdin
 ```
 
+## OAuth
+
+HTTP モードでは、`MCP_PASSWORD` と `MCP_PUBLIC_URL` を両方設定すると [mcpauth](https://github.com/yz4230/mcpauth) による OAuth で `/mcp` を保護します。ChatGPT や Claude のコネクタから接続すると、パスワード入力ページが表示されます。どちらも未設定なら認証なしで動作し、片方だけの場合は起動に失敗します。
+
+| 変数 | 既定値 | 説明 |
+|---|---|---|
+| `MCP_PASSWORD` | なし | ログインページのパスワード |
+| `MCP_PUBLIC_URL` | なし | クライアントから見た公開 URL(例: `https://mcp.example.com`) |
+| `MCP_STATE_FILE` | `oauth_state.json`(Docker では `/data/oauth_state.json`) | 登録済みクライアントとトークンの保存先 |
+| `MCP_REDIRECT_URIS` | なし | ChatGPT と Claude に加えて許可するリダイレクト URI(カンマ区切り) |
+
+`docker:run` は `<CONTAINER_NAME>-data` ボリュームを `/data` にマウントするので、コンテナを作り直してもトークンは保持されます。
+
 ## Docker
 
 Docker 用の補助タスクは Make ではなく mise で提供しています。

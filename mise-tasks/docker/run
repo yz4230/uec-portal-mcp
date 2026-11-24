@@ -20,6 +20,7 @@ fi
   -p "${HOST_PORT}:${CONTAINER_PORT}" \
   --name "$CONTAINER_NAME" \
   --restart unless-stopped \
+  -v "${CONTAINER_NAME}-data:/data" \
   "${env_args[@]}" \
   -e "PORT=$CONTAINER_PORT" \
   -d \

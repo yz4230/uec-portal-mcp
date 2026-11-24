@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1
 
-ARG GO_VERSION=1.26
+ARG GO_VERSION=1.27.4
 
-FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-bookworm AS build
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-trixie AS build
 
 WORKDIR /src
 
@@ -21,13 +21,17 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     GOOS="${TARGETOS:-linux}" GOARCH="${TARGETARCH:-amd64}" \
     go build -trimpath -ldflags="-s -w" -o /out/uec-portal-mcp .
 
-FROM gcr.io/distroless/static-debian12:nonroot AS runtime
+RUN mkdir -p /out/data
+
+FROM gcr.io/distroless/static-debian13:nonroot AS runtime
 
 WORKDIR /
 
 COPY --from=build /out/uec-portal-mcp /uec-portal-mcp
+COPY --from=build --chown=65532:65532 /out/data /data
 
 ENV PORT=8080
+ENV MCP_STATE_FILE=/data/oauth_state.json
 
 EXPOSE 8080
 
