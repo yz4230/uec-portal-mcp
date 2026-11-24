@@ -203,6 +203,16 @@ func newAuthenticationServerWithFailure(t *testing.T, loginCount *atomic.Int32, 
 		if r.Form.Get("authcode") != "123456" {
 			t.Errorf("authcode = %q, want 123456", r.Form.Get("authcode"))
 		}
+		_, _ = io.WriteString(w, `<form action="/consent" method="post"><input type="hidden" name="_shib_idp_consentIds" value="email" checked>`+
+			`<button type="submit" name="_eventId_proceed">同意する</button><button type="submit" name="_eventId_AttributeReleaseRejected">拒否する</button></form>`)
+	})
+	mux.HandleFunc("/consent", func(w http.ResponseWriter, r *http.Request) {
+		if err := r.ParseForm(); err != nil {
+			t.Errorf("parse consent form: %v", err)
+		}
+		if !r.Form.Has("_eventId_proceed") || r.Form.Has("_eventId_AttributeReleaseRejected") || r.Form.Get("_shib_idp_consentIds") != "email" {
+			t.Errorf("consent form = %#v", r.Form)
+		}
 		http.Redirect(w, r, "/Portal/u001/home", http.StatusFound)
 	})
 	mux.HandleFunc("/Portal/u001/home", func(w http.ResponseWriter, r *http.Request) {

@@ -169,6 +169,11 @@ func (a *Authenticator) login(ctx context.Context) (*http.Client, error) {
 			values.Set("authcode", code)
 			values.Set("login", "Login")
 		}
+		// Shibboleth pages such as the attribute release consent proceed
+		// through a submit button, which buildForm leaves out.
+		if form.Find(`button[name="_eventId_proceed"], input[type="submit"][name="_eventId_proceed"]`).Length() > 0 {
+			values.Set("_eventId_proceed", "")
+		}
 
 		doc, resp, err = submitForm(ctx, client, actionURL, values)
 		if err != nil {
